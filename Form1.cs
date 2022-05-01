@@ -57,7 +57,7 @@ namespace StarMapCreator
 
 
         List<CheckBox> checkBoxlist = new List<CheckBox>();
-        const int RoomSize = 24;
+        public const int RoomSize = 8;
         Panel[,] checks = new Panel[RoomSize, RoomSize];
         class oop
         {
@@ -70,6 +70,7 @@ namespace StarMapCreator
         private Panel lastPanel;
         private void initPan()
         {
+            //这里的逻辑还需要重构 读取PrintForm.room.colors 来动态生成画板即可
             var j = 0; var i = 0;
             var c = new Panel();
             c.SetBounds(label2.Location.X + j * 22, label2.Location.Y + 40 + i * 22, 20, 20);
@@ -111,8 +112,8 @@ namespace StarMapCreator
         public static PrintForm pf;
         private void Form1_Load(object sender, EventArgs e)
         {
-            initPan();
             
+            //初始化画板
             pf = new PrintForm();
             pf.father = this;
             pf.TopLevel = false;
@@ -120,6 +121,9 @@ namespace StarMapCreator
             pf.Dock = DockStyle.Fill;
             pf.Parent = this.panel1;
             pf.Show();
+            //初始化色盘
+            initPan();
+            //
             //return;
             int k = 0;
             for (var i = 0; i < RoomSize; i++)
@@ -223,7 +227,7 @@ namespace StarMapCreator
                     else
                     {
                         var c = pf.rooms[i, j];
-                        sb.Append("SMCRooms_bits[" + (k++) + "][" + d + "]=" + (c.color == Color.White ? 0 : 1) + ";");
+                        sb.Append("SMCRooms_bits[" + (k++) + "][" + d + "]=" + PrintForm.GetIdByColor(c.color) + ";");
                     }
                 }
                 sb.Append("\n");
@@ -241,7 +245,7 @@ namespace StarMapCreator
             }
 
         }
-        const int size = 24;
+        const int size = RoomSize;
         const int size2 = size * size;
         /// <summary>
         /// 输出旋转矩阵索引代码
@@ -268,6 +272,7 @@ namespace StarMapCreator
                     sb.Append("\n");
                 }
             }
+            sb.Append("\n");
             var hfsize = size / (size - 1);
             //右旋转90°
             for (var i = 0; i < size2; i++)
@@ -276,11 +281,20 @@ namespace StarMapCreator
             }
             for (var i = 0; i < size; i++)
             {
-                for (var j = 0; j <= hfsize; j++)
+                var aaa = i * RoomSize;
+                var bbb = aaa + RoomSize;
+                for (var j = aaa; j < bbb; j++)
                 {
-                    var temp = outline[i * size + j];
-                    outline[i * size + j] = outline[i * size + (size - 1) - j];
-                    outline[i * size + (size - 1) - j] = temp;
+                    for (var k = j + 1; k < bbb; k++)
+                    {
+                        var t = outline[j];
+                        var temp = outline[k];
+                        if (t < temp)
+                        {
+                            outline[k] = t;
+                            outline[j] = temp;
+                        }
+                    }
                 }
             }
             for (var i = 0; i < size2; i++)
@@ -302,11 +316,20 @@ namespace StarMapCreator
             }
             for (var i = 0; i < size; i++)
             {
-                for (var j = 0; j <= hfsize; j++)
+                var aaa = i * RoomSize;
+                var bbb = aaa + RoomSize;
+                for (var j = aaa; j < bbb; j++)
                 {
-                    var temp = outline[i * size + j];
-                    outline[i * size + j] = outline[i * size + (size - 1) - j];
-                    outline[i * size + (size - 1) - j] = temp;
+                    for (var k = j + 1; k < bbb; k++)
+                    {
+                        var t = outline[j];
+                        var temp = outline[k];
+                        if (t < temp)
+                        {
+                            outline[k] = t;
+                            outline[j] = temp;
+                        }
+                    }
                 }
             }
             for (var i = 0; i < size2; i++)
@@ -328,11 +351,20 @@ namespace StarMapCreator
             }
             for (var i = 0; i < size; i++)
             {
-                for (var j = 0; j <= hfsize; j++)
+                var aaa = i * RoomSize;
+                var bbb = aaa + RoomSize;
+                for (var j = aaa; j < bbb; j++)
                 {
-                    var temp = outline[i * size + j];
-                    outline[i * size + j] = outline[i * size + (size - 1) - j];
-                    outline[i * size + (size - 1) - j] = temp;
+                    for (var k = j + 1; k < bbb; k++)
+                    {
+                        var t = outline[j];
+                        var temp = outline[k];
+                        if (t < temp)
+                        {
+                            outline[k] = t;
+                            outline[j] = temp;
+                        }
+                    }
                 }
             }
             for (var i = 0; i < size2; i++)
@@ -532,7 +564,6 @@ namespace StarMapCreator
                         var c = pf.rooms[i, j];
                         var id = (int)ary[i * RoomSize + j];
                         c.resetColor(id);
-
                     }
                 }
                 PrintForm.在矩形渲染时 = false;
@@ -548,7 +579,7 @@ namespace StarMapCreator
                 for (var j = 0; j < RoomSize; j++)
                 {
                     var c = pf.rooms[i, j];
-                    outAry[i * RoomSize + j] = c.color == Color.Black ? 1 : 0;
+                    outAry[i * RoomSize + j] = PrintForm.GetIdByColor(c.color);
                 }
             }
 
@@ -563,6 +594,82 @@ namespace StarMapCreator
                 sw.Write(result);
                 sw.Flush();
                 sw.Close();
+            }
+        }
+        /// <summary>
+        /// 右旋90°
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button6_Click(object sender, EventArgs e)
+        {
+            if(启用新画板)
+            {
+                StringBuilder sb = new StringBuilder();
+                int[] line = new int[size2];
+                int[] index = new int[size2];
+                int[] outline = new int[size2];
+                var hfsize = size / (size - 1)+1;
+                //初始化矩阵
+                for (var i = 0; i < RoomSize; i++)
+                {
+
+                    for (var j = 0; j < RoomSize; j++)
+                    {
+                        var c = pf.rooms[i, j];
+                        index[i * RoomSize + j] = i * RoomSize + j;
+                        line[i * RoomSize + j] = PrintForm.GetIdByColor(c.color);
+                        //sb.Append(line[i * RoomSize + j]);
+                    }
+                    //sb.Append("\n");
+                }
+                //sb.Append("右旋转90°\n");
+                # region 右旋转90°矩阵旋转
+                    for (var i = 0; i < size2; i++)
+                    {
+                        outline[i] = index[i % size * size + i / size];
+                    }
+                    for (var i = 0; i < size; i++)
+                    {
+                        for (var j = 0; j < size; j++)
+                        {
+                            var temp = outline[i * size + j];
+                            outline[i * size + j] = outline[i * size + (size - 1) - j];
+                            outline[i * size + (size - 1) - j] = temp;
+                        }
+                    }
+                    PrintForm.启用矩形渲染 = true; //该标记用于撤销
+                    for (var i = 0; i < size; i++)
+                    {
+                        var aaa = i * RoomSize;
+                        var bbb = aaa + RoomSize;
+                        for (var j = aaa; j < bbb; j++)
+                        {
+                            for (var k = j+1; k < bbb; k++)
+                            {
+                                var t = outline[j];
+                                var temp = outline[k];
+                                if (t < temp)
+                                {
+                                    outline[k] = t;
+                                    outline[j] = temp;
+                                }
+                            }
+                        }
+                        //渲染部分
+                        for (var j = 0; j < size; j++)
+                        {
+                            var c = pf.rooms[i, j];
+                            c.resetColor(line[outline[i * size + j]]);
+                            //sb.Append(outline[i * size + j] + "  ");
+                        }
+                        //sb.Append("\n");
+                    }
+                    //PrintForm.This.father.richTextBox1.Text = "";
+                    //PrintForm.This.father.richTextBox1.AppendText(sb.ToString());
+                    PrintForm.启用矩形渲染 = false;
+                    PrintForm.更新撤回列表();
+                #endregion
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -28,26 +29,62 @@ namespace StarMapCreator
             InitializeComponent();
             This = this;
         }
+        #region 变量区
+        /// <summary>
+        /// 当前实例
+        /// </summary>
         public static PrintForm This;
         public int DrawColorId = 0;
+        /// <summary>
+        /// 帧渲染计时器
+        /// </summary>
         public Timer MainTimer = new Timer();
+        /// <summary>
+        /// 主窗体
+        /// </summary>
         public Form1 father;
-        const int RoomSize = 24;
+        /// <summary>
+        /// 房间尺寸
+        /// </summary>
+        const int RoomSize = Form1.RoomSize;
+
         public room[,] rooms = new room[RoomSize, RoomSize];
         public static List<oop> 当前撤回列表 = new List<oop>();
         public static List<List<oop>> 历史撤回列表 = new List<List<oop>>();
         public static int 撤回列表指针 = 0;
         public static Point 鼠标按下位置 = new Point(0, 0);
         public static Point 鼠标松开位置 = new Point(0, 0);
-
         public static bool 有变更 = false;
         public static bool 在矩形渲染时 = false;
+        public static Hashtable CIDhashtable = new Hashtable();
+        public static void InitHT(ref Color[] cs) {
+            for (var i = 0; i < cs.Length; i++)
+            {
+                CIDhashtable.Add(cs[i].GetHashCode(), i);
+            }
+        }
+        /// <summary>
+        /// 转换颜色 为 索引
+        /// </summary>
+        /// <param name="c"></param>
+        /// <returns></returns>
+        public static int GetIdByColor(Color c)
+        {
+            object o = CIDhashtable[c.GetHashCode()];
+            if(o==null)
+            { return 0; }
+            int i = Convert.ToInt32(o);
+            return i;
+        }
+        #endregion
         public static void 清空撤回列表()
         {
             当前撤回列表 = new List<oop>();
             历史撤回列表 = new List<List<oop>>();
             撤回列表指针 = 0;
         }
+
+        #region 撤回相关
         /// <summary>
         /// 使撤回表向下走
         /// </summary>
@@ -92,9 +129,13 @@ namespace StarMapCreator
                 撤回列表指针 = 撤回列表指针 + 1;
             }
         }
+        #endregion
+
         public class room
         {
-
+            /// <summary>
+            /// 颜色列表
+            /// </summary>
             static public Color[] colors = { Color.White, Color.Black };
             public float x;
             public float y;
@@ -130,22 +171,24 @@ namespace StarMapCreator
             }
             public void resetColor(Color color)
             {
-                var cid = 0;
-                for (var i = 0; i < colors.Length; i++)
-                {
-                    if (color == colors[i])
-                    {
-                        cid = i;
-                    }
-                }
-                resetColor(cid);
+                //var cid = 0;
+                //for (var i = 0; i < colors.Length; i++)
+                //{
+                //    if (color == colors[i])
+                //    {
+                //        cid = i;
+                //    }
+                //}
+                resetColor(GetIdByColor(color));
             }
             public room(float x, float y, float width, float height)
             {
                 this.x = x; this.y = y; this.width = width; this.height = height;
             }
         }
-        //用于撤回
+        /// <summary>
+        /// 用于撤回的缓存对象
+        /// </summary>
         public class oop
         {
             public room p;
@@ -170,22 +213,22 @@ namespace StarMapCreator
             for (var i = 0; i < RoomSize; i++)
             {
                 if (i != a && i != b)
-                    rooms[0, i].resetColor(1);
+                    rooms[0, i].resetColor(GetIdByColor(Color.Black));
             }
             for (var i = 0; i < RoomSize; i++)
             {
                 if (i != a && i != b)
-                    rooms[cc, i].resetColor(1);
+                    rooms[cc, i].resetColor(GetIdByColor(Color.Black));
             }
             for (var i = 0; i < RoomSize; i++)
             {
                 if (i != a && i != b)
-                    rooms[i, 0].resetColor(1);
+                    rooms[i, 0].resetColor(GetIdByColor(Color.Black));
             }
             for (var i = 0; i < RoomSize; i++)
             {
                 if (i != a && i != b)
-                    rooms[i, cc].resetColor(1);
+                    rooms[i, cc].resetColor(GetIdByColor(Color.Black));
             }
             清空撤回列表();
 
@@ -249,7 +292,7 @@ namespace StarMapCreator
             {
                 for (var j = 0; j < RoomSize; j++)
                 {
-                    rooms[i, j].resetColor(0);
+                    rooms[i, j].resetColor(GetIdByColor(Color.White));
                 }
             }
             更新撤回列表();
@@ -259,22 +302,22 @@ namespace StarMapCreator
             for (var i = 0; i < RoomSize; i++)
             {
                 if (i != a && i != b)
-                    rooms[0, i].resetColor(1);
+                    rooms[0, i].resetColor(GetIdByColor(Color.Black));
             }
             for (var i = 0; i < RoomSize; i++)
             {
                 if (i != a && i != b)
-                    rooms[cc, i].resetColor(1);
+                    rooms[cc, i].resetColor(GetIdByColor(Color.Black));
             }
             for (var i = 0; i < RoomSize; i++)
             {
                 if (i != a && i != b)
-                    rooms[i, 0].resetColor(1);
+                    rooms[i, 0].resetColor(GetIdByColor(Color.Black));
             }
             for (var i = 0; i < RoomSize; i++)
             {
                 if (i != a && i != b)
-                    rooms[i, cc].resetColor(1);
+                    rooms[i, cc].resetColor(GetIdByColor(Color.Black));
             }
             在矩形渲染时 = false;
             更新撤回列表();
@@ -523,6 +566,7 @@ namespace StarMapCreator
         }
         public void PrintForm_Load(object sender, EventArgs e)
         {
+            InitHT(ref room.colors);
             this.KeyPreview = true;
             this.MouseWheel += new MouseEventHandler(PrintForm_MouseWheel);
             MainTimer.Enabled = true;
@@ -533,6 +577,7 @@ namespace StarMapCreator
             });
             InitHook();
             initRoomsDraw();
+
             Application.AddMessageFilter(mf);
         }
 
